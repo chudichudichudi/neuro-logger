@@ -11,22 +11,23 @@ app.config.from_object('config')
 db = SQLAlchemy(app)
 
 
-class Log(db.Model):
-    __tablename__ = 'log'
+class Experiment(db.Model):
+    __tablename__ = 'experiment'
     id = db.Column('id', db.Integer, primary_key=True)
-    sujeto = db.Column(db.String(60))
-    log = db.Column(db.String)
+    test_subject = db.Column(db.String(60))
+    experiment_log = db.Column(db.String)
+    experiment_name = db.Column(db.String)
 
-    def __init__(self, sujeto, log):
-        self.sujeto = sujeto
-        self.log = log
+    def __init__(self, test_subject, experiment_log, experiment_name):
+        self.test_subject = test_subject
+        self.experiment_log = experiment_log
+        self.experiment_name = experiment_name
 
 admin = Admin(app)
-admin.add_view(ModelView(Log, db.session))
+admin.add_view(ModelView(Experiment, db.session))
 
 
 @app.route('/')
-@cross_origin()
 def default():
     return ""
 
@@ -36,12 +37,13 @@ def default():
 def create_log():
     if not request.json:
         return "error not json", 400
-    sujeto = request.json['sujeto'] or 'nn'
-    sujeto_log = json.dumps(request.json['log']) or ''
-    log = Log(sujeto, sujeto_log)
-    db.session.add(log)
+    test_subject = request.json['test_subject'] or 'nn'
+    experiment_log = json.dumps(request.json['experiment_log']) or ''
+    experiment_name = json.dumps(request.json['experiment_name']) or ''
+    experiment = Experiment(test_subject, experiment_log, experiment_name)
+    db.session.add(experiment)
     db.session.commit()
-    return str(log.id), 201
+    return str(experiment.id), 201
 
 
 @app.route('/append_log', methods=['POST'])
@@ -50,10 +52,10 @@ def append_log():
     if not request.json or not 'id' in request.json \
             or not 'log' in request.json:
         return "error, missing parameter (id, log) or not json", 400
-    log = Log.query.get(request.json['id'])
-    new_log = json.loads(log.log) or ''
-    new_log.append(json.loads(request.json[log]))
-    log.log = new_log
+    experiment = Experiment.query.get(request.json['id'])
+    new_log = json.loads(experiment.log) or ''
+    new_log.append(json.loads(request.json['log']))
+    experiment.experiment_log = new_log
     db.session.commit()
     return "ok", 200
 
