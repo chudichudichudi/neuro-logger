@@ -1,8 +1,10 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask.ext.admin import Admin
 from flask.ext.admin.contrib.sqla import ModelView
 from flask.ext.cors import cross_origin
+from marshmallow import Serializer
+
 
 import json
 
@@ -18,10 +20,15 @@ class Experiment(db.Model):
     experiment_log = db.Column(db.String)
     experiment_name = db.Column(db.String)
 
-    def __init__(self, test_subject, experiment_log, experiment_name):
-        self.test_subject = test_subject
-        self.experiment_log = experiment_log
-        self.experiment_name = experiment_name
+    # def __init__(self, test_subject, experiment_log, experiment_name):
+    #     self.test_subject = test_subject
+    #     self.experiment_log = experiment_log
+    #     self.experiment_name = experiment_name
+
+
+class ExperimentSerializer(Serializer):
+    class Meta:
+        fields = ('id', 'test_subject', 'experiment_log', "experiment_name")
 
 admin = Admin(app)
 admin.add_view(ModelView(Experiment, db.session))
@@ -44,6 +51,22 @@ def create_log():
     db.session.add(experiment)
     db.session.commit()
     return str(experiment.id), 201
+
+
+@app.route('/get_experiment/<experiment>', methods=['GET'])
+@cross_origin()
+def get_experiment(experiment):
+    experiments = db.session.query(Experiment)\
+        .filter(Experiment.experiment_name == experiment)
+    return jsonify({"experiments":
+                    ExperimentSerializer(experiments, many=True).data}), 200
+
+
+@app.route('/get_log/<int:id>', methods=['GET'])
+@cross_origin()
+def get_log(id):
+    experiment = Experiment.query.get(id)
+    return jsonify({"experiments": ExperimentSerializer(experiment).data}), 200
 
 
 @app.route('/append_log', methods=['POST'])
