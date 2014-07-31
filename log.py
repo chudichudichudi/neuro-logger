@@ -47,14 +47,18 @@ def default():
 def create_log():
     if not request.json or not 'test_subject' in request.json \
             or not 'experiment_name' in request.json:
-        return ("error, missing parameter "
-                "(test_subject, experiment_name) or not json"), 400
+        return ("error, missing parameter (test_subject, experiment_name,"
+                " experiment_log optional) or not json"), 400
     test_subject = request.json['test_subject'] or 'nn'
     experiment_name = request.json['experiment_name'] or ''
     experiment = Experiment()
     experiment.test_subject = test_subject
     experiment.experiment_name = experiment_name
-    experiment.experiment_log = "[]"
+    if 'experiment_log' in request.json:
+        experiment_log = request.json['experiment_log']
+    else:
+        experiment_log = '[]'
+    experiment.experiment_log = experiment_log
     db.session.add(experiment)
     db.session.commit()
     return str(experiment.id), 201
